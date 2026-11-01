@@ -1,0 +1,237 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Safety Net: Default-Deny Catch-All
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Hardened Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && request.auth.token.email == 'myadgate@gmail.com';
+    }
+
+    // Validation Blueprint: UserProfile (/users/{userId})
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'name', 'email', 'phone', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['uid', 'name', 'email', 'phone', 'createdAt', 'updatedAt']) &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 && data.uid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.uid == request.auth.uid &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 60 &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 120 &&
+        data.phone is string && data.phone.size() >= 0 && data.phone.size() <= 30 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: Reservation (/reservations/{reservationId})
+    function isValidReservation(data) {
+      return data.keys().hasAll([
+          'userId', 'customerName', 'customerPhone', 'customerEmail',
+          'date', 'time', 'partySize', 'tableType', 'preselectedMenu',
+          'notes', 'adminMemo', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'userId', 'customerName', 'customerPhone', 'customerEmail',
+          'date', 'time', 'partySize', 'tableType', 'preselectedMenu',
+          'notes', 'adminMemo', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 && data.userId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 60 &&
+        data.customerPhone is string && data.customerPhone.size() >= 7 && data.customerPhone.size() <= 30 && data.customerPhone.matches('^[0-9\\-+() ]+$') &&
+        data.customerEmail is string && data.customerEmail.size() >= 3 && data.customerEmail.size() <= 120 &&
+        data.date is string && data.date.size() == 10 && data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
+        data.time is string && data.time.size() == 5 && data.time.matches('^[0-9]{2}:[0-9]{2}$') &&
+        data.partySize is int && data.partySize >= 1 && data.partySize <= 12 &&
+        data.tableType is string && data.tableType.size() >= 4 && data.tableType.size() <= 20 &&
+        (data.tableType in ['hall', 'window', 'private_room']) &&
+        data.preselectedMenu is string && data.preselectedMenu.size() >= 0 && data.preselectedMenu.size() <= 120 &&
+        data.notes is string && data.notes.size() >= 0 && data.notes.size() <= 300 &&
+        data.adminMemo is string && data.adminMemo.size() >= 0 && data.adminMemo.size() <= 300 &&
+        data.status is string && data.status.size() >= 6 && data.status.size() <= 15 &&
+        (data.status in ['pending', 'confirmed', 'cancelled', 'completed', 'noshow']) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: StoreSettings (/storeSettings/{settingId})
+    function isValidStoreSettings(data) {
+      return data.keys().hasAll([
+          'maxSeatsPerSlot', 'maxTablesPerSlot', 'maxPartySize',
+          'availableSlots', 'closedDates', 'blockedSlotKeys',
+          'regularClosedDay', 'openHoursText', 'phone', 'address',
+          'notice', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'maxSeatsPerSlot', 'maxTablesPerSlot', 'maxPartySize',
+          'availableSlots', 'closedDates', 'blockedSlotKeys',
+          'regularClosedDay', 'openHoursText', 'phone', 'address',
+          'notice', 'updatedAt'
+        ]) &&
+        data.maxSeatsPerSlot is int && data.maxSeatsPerSlot >= 1 && data.maxSeatsPerSlot <= 200 &&
+        data.maxTablesPerSlot is int && data.maxTablesPerSlot >= 1 && data.maxTablesPerSlot <= 60 &&
+        data.maxPartySize is int && data.maxPartySize >= 1 && data.maxPartySize <= 20 &&
+        data.availableSlots is list && data.availableSlots.size() >= 1 && data.availableSlots.size() <= 20 &&
+        data.availableSlots[0] is string && data.availableSlots[0].size() == 5 &&
+        data.closedDates is list && data.closedDates.size() <= 60 &&
+        (data.closedDates.size() == 0 || (data.closedDates[0] is string && data.closedDates[0].size() == 10)) &&
+        data.blockedSlotKeys is list && data.blockedSlotKeys.size() <= 60 &&
+        (data.blockedSlotKeys.size() == 0 || (data.blockedSlotKeys[0] is string && data.blockedSlotKeys[0].size() <= 25)) &&
+        data.regularClosedDay is string && data.regularClosedDay.size() >= 1 && data.regularClosedDay.size() <= 40 &&
+        data.openHoursText is string && data.openHoursText.size() >= 1 && data.openHoursText.size() <= 120 &&
+        data.phone is string && data.phone.size() >= 3 && data.phone.size() <= 30 &&
+        data.address is string && data.address.size() >= 3 && data.address.size() <= 150 &&
+        data.notice is string && data.notice.size() >= 0 && data.notice.size() <= 300 &&
+        data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: DailyAvailability (/dailyAvailability/{dateId})
+    function isValidDailyAvailability(data) {
+      return data.keys().hasAll([
+          'date', 'totalActiveBookings', 'totalActiveGuests', 'slotSummary', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'date', 'totalActiveBookings', 'totalActiveGuests', 'slotSummary', 'updatedAt'
+        ]) &&
+        data.date is string && data.date.size() == 10 && data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
+        data.totalActiveBookings is int && data.totalActiveBookings >= 0 && data.totalActiveBookings <= 500 &&
+        data.totalActiveGuests is int && data.totalActiveGuests >= 0 && data.totalActiveGuests <= 2000 &&
+        data.slotSummary is string && data.slotSummary.size() >= 0 && data.slotSummary.size() <= 600 &&
+        data.updatedAt is timestamp;
+    }
+
+    // Collection 1: /users/{userId} (PII Isolated to Owner or Admin)
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isVerifiedUser() &&
+        isValidId(userId) &&
+        request.auth.uid == userId &&
+        isValidUserProfile(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() &&
+        isValidId(userId) &&
+        isValidUserProfile(incoming()) &&
+        request.auth.uid == userId &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    // Collection 2: /reservations/{reservationId} (PII Isolated & Action-Based Updates)
+    match /reservations/{reservationId} {
+      allow get: if isSignedIn() && isValidId(reservationId) && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+
+      allow create: if isVerifiedUser() &&
+        isValidId(reservationId) &&
+        isValidReservation(incoming()) &&
+        incoming().userId == request.auth.uid &&
+        (incoming().status == 'pending' || isAdmin()) &&
+        (incoming().adminMemo == '' || isAdmin()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser() &&
+        isValidId(reservationId) &&
+        isValidReservation(incoming()) &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          // Action 1: Customer cancels their own active reservation (Terminal State Lock enforced)
+          (
+            existing().userId == request.auth.uid &&
+            !(existing().status in ['cancelled', 'completed', 'noshow']) &&
+            incoming().status == 'cancelled' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+          ) ||
+          // Action 2: Customer edits notes or contact info while reservation is still pending
+          (
+            existing().userId == request.auth.uid &&
+            existing().status == 'pending' &&
+            incoming().status == 'pending' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['customerName', 'customerPhone', 'notes', 'updatedAt'])
+          ) ||
+          // Action 3: Admin manages reservation state, seating, or internal memo
+          (
+            isAdmin() &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'status', 'notes', 'adminMemo', 'tableType', 'partySize', 'date', 'time', 'updatedAt'
+            ])
+          )
+        );
+
+      allow delete: if isAdmin() && isValidId(reservationId);
+    }
+
+    // Collection 3: /storeSettings/{settingId} (Publicly readable config, Admin-only write)
+    match /storeSettings/{settingId} {
+      allow get: if isValidId(settingId) && settingId == 'main';
+      allow list: if false;
+      allow create: if isAdmin() &&
+        isValidId(settingId) &&
+        settingId == 'main' &&
+        isValidStoreSettings(incoming()) &&
+        incoming().updatedAt == request.time;
+      allow update: if isAdmin() &&
+        isValidId(settingId) &&
+        settingId == 'main' &&
+        isValidStoreSettings(incoming()) &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'maxSeatsPerSlot', 'maxTablesPerSlot', 'maxPartySize',
+          'availableSlots', 'closedDates', 'blockedSlotKeys',
+          'regularClosedDay', 'openHoursText', 'phone', 'address',
+          'notice', 'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+
+    // Collection 4: /dailyAvailability/{dateId} (Publicly readable non-PII slot availability counter)
+    match /dailyAvailability/{dateId} {
+      allow get: if isValidId(dateId) && dateId.size() == 10 && dateId.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+      allow list: if false;
+      allow create: if isVerifiedUser() &&
+        isValidId(dateId) &&
+        dateId.size() == 10 &&
+        isValidDailyAvailability(incoming()) &&
+        incoming().date == dateId &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() &&
+        isValidId(dateId) &&
+        dateId.size() == 10 &&
+        isValidDailyAvailability(incoming()) &&
+        incoming().date == existing().date &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'totalActiveBookings', 'totalActiveGuests', 'slotSummary', 'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+  }
+}

@@ -1,0 +1,296 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Customer profile containing contact details for table reservations.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the user",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Customer display name",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Verified email address",
+          "minLength": 3,
+          "maxLength": 120
+        },
+        "phone": {
+          "type": "string",
+          "description": "Customer contact phone number",
+          "minLength": 0,
+          "maxLength": 30
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Account registration timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Profile last update timestamp"
+        }
+      },
+      "required": ["uid", "name", "email", "phone", "createdAt", "updatedAt"]
+    },
+    "Reservation": {
+      "title": "Reservation",
+      "description": "Customer table reservation record for Haochan restaurant.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID of the customer who created the reservation",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "customerName": {
+          "type": "string",
+          "description": "Reservation holder full name",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "customerPhone": {
+          "type": "string",
+          "description": "Reservation holder phone number",
+          "minLength": 7,
+          "maxLength": 30,
+          "pattern": "^[0-9\\-+() ]+$"
+        },
+        "customerEmail": {
+          "type": "string",
+          "format": "email",
+          "description": "Reservation holder email",
+          "minLength": 3,
+          "maxLength": 120
+        },
+        "date": {
+          "type": "string",
+          "description": "Visit date in YYYY-MM-DD format",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "time": {
+          "type": "string",
+          "description": "Visit time slot in HH:MM format",
+          "minLength": 5,
+          "maxLength": 5,
+          "pattern": "^[0-9]{2}:[0-9]{2}$"
+        },
+        "partySize": {
+          "type": "number",
+          "description": "Number of guests (1 to 12)"
+        },
+        "tableType": {
+          "type": "string",
+          "description": "Preferred seating zone",
+          "enum": ["hall", "window", "private_room"],
+          "minLength": 4,
+          "maxLength": 20
+        },
+        "preselectedMenu": {
+          "type": "string",
+          "description": "Optional pre-selected signature dish or course name",
+          "minLength": 0,
+          "maxLength": 120
+        },
+        "notes": {
+          "type": "string",
+          "description": "Customer special requests or dietary notes",
+          "minLength": 0,
+          "maxLength": 300
+        },
+        "adminMemo": {
+          "type": "string",
+          "description": "Internal restaurant staff memo",
+          "minLength": 0,
+          "maxLength": 300
+        },
+        "status": {
+          "type": "string",
+          "description": "Current reservation status",
+          "enum": ["pending", "confirmed", "cancelled", "completed", "noshow"],
+          "minLength": 6,
+          "maxLength": 15
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when reservation was submitted"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when reservation was last updated"
+        }
+      },
+      "required": [
+        "userId",
+        "customerName",
+        "customerPhone",
+        "customerEmail",
+        "date",
+        "time",
+        "partySize",
+        "tableType",
+        "preselectedMenu",
+        "notes",
+        "adminMemo",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "StoreSettings": {
+      "title": "StoreSettings",
+      "description": "Global restaurant operating configuration, seating capacity, and closed dates.",
+      "type": "object",
+      "properties": {
+        "maxSeatsPerSlot": {
+          "type": "number",
+          "description": "Maximum total guests allowed per time slot"
+        },
+        "maxTablesPerSlot": {
+          "type": "number",
+          "description": "Maximum tables available per time slot"
+        },
+        "maxPartySize": {
+          "type": "number",
+          "description": "Maximum party size for a single online booking"
+        },
+        "availableSlots": {
+          "type": "array",
+          "description": "List of active reservation time slots (up to 20 slots)"
+        },
+        "closedDates": {
+          "type": "array",
+          "description": "List of closed dates in YYYY-MM-DD format (up to 60 dates)"
+        },
+        "blockedSlotKeys": {
+          "type": "array",
+          "description": "List of blocked date_time keys (up to 60 keys)"
+        },
+        "regularClosedDay": {
+          "type": "string",
+          "description": "Weekly regular closing day description",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "openHoursText": {
+          "type": "string",
+          "description": "Display text for operating hours and break time",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "phone": {
+          "type": "string",
+          "description": "Restaurant inquiry phone number",
+          "minLength": 3,
+          "maxLength": 30
+        },
+        "address": {
+          "type": "string",
+          "description": "Restaurant street address",
+          "minLength": 3,
+          "maxLength": 150
+        },
+        "notice": {
+          "type": "string",
+          "description": "Reservation policy notice shown to guests",
+          "minLength": 0,
+          "maxLength": 300
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last configuration update timestamp"
+        }
+      },
+      "required": [
+        "maxSeatsPerSlot",
+        "maxTablesPerSlot",
+        "maxPartySize",
+        "availableSlots",
+        "closedDates",
+        "blockedSlotKeys",
+        "regularClosedDay",
+        "openHoursText",
+        "phone",
+        "address",
+        "notice",
+        "updatedAt"
+      ]
+    },
+    "DailyAvailability": {
+      "title": "DailyAvailability",
+      "description": "Non-PII aggregate booking counters for a single date (YYYY-MM-DD) to check remaining seats.",
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "description": "Date in YYYY-MM-DD format",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "totalActiveBookings": {
+          "type": "number",
+          "description": "Total active reservations on this date"
+        },
+        "totalActiveGuests": {
+          "type": "number",
+          "description": "Total active guests booked across all slots on this date"
+        },
+        "slotSummary": {
+          "type": "string",
+          "description": "Compact summary of slot counts (up to 600 chars)",
+          "minLength": 0,
+          "maxLength": 600
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last availability update"
+        }
+      },
+      "required": [
+        "date",
+        "totalActiveBookings",
+        "totalActiveGuests",
+        "slotSummary",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private customer profile isolated per user UID."
+    },
+    "/reservations/{reservationId}": {
+      "schema": { "$ref": "#/entities/Reservation" },
+      "description": "Table reservations accessible only to the owning customer or verified restaurant admin."
+    },
+    "/storeSettings/{settingId}": {
+      "schema": { "$ref": "#/entities/StoreSettings" },
+      "description": "Publicly readable restaurant operating hours and seating capacity settings, editable only by admin."
+    },
+    "/dailyAvailability/{dateId}": {
+      "schema": { "$ref": "#/entities/DailyAvailability" },
+      "description": "Publicly readable non-PII daily seat availability summary."
+    }
+  }
+}
